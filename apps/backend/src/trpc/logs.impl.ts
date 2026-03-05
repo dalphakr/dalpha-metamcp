@@ -2,11 +2,16 @@ import {
   ClearLogsResponseSchema,
   GetLogsRequestSchema,
   GetLogsResponseSchema,
+  GetPodLogsRequestSchema,
+  GetPodLogsResponseSchema,
 } from "@repo/zod-types";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import logger from "@/utils/logger";
 
+import { mcpServersRepository } from "../db/repositories";
+import { getPodLogs, getPodStatus } from "../lib/k8s";
 import { metamcpLogStore } from "../lib/metamcp/log-store";
 
 export const logsImplementations = {
@@ -40,5 +45,37 @@ export const logsImplementations = {
       logger.error("Error clearing logs:", error);
       throw new Error("Failed to clear logs");
     }
+  },
+
+  getPodLogs: async (
+    input: z.infer<typeof GetPodLogsRequestSchema>,
+  ): Promise<z.infer<typeof GetPodLogsResponseSchema>> => {
+    const server = await mcpServersRepository.findByUuid(input.serverUuid);
+    if (!server) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Server not found" });
+    }
+    if (server.type !== "STDIO" || !server.k8s_command_hash) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Pod logs are only available for STDIO servers",
+      });
+    }
+
+    const status = await getPodStatus(server.k8s_command_hash);
+    const logs = await getPodLogs(server.k8s_command_hash, {
+      tailLines: input.tailLines,
+      sinceSeconds: input.sinceSeconds,
+      timestamps: true,
+    });
+
+    return {
+      success: true as const,
+      data: {
+        logs: logs ?? "",
+        podName: `metamcp-mcp-${server.k8s_command_hash}`,
+        podPhase: status?.phase ?? "Unknown",
+        ready: status?.ready ?? false,
+      },
+    };
   },
 };

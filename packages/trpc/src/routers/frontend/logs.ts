@@ -2,6 +2,8 @@ import {
   ClearLogsResponseSchema,
   GetLogsRequestSchema,
   GetLogsResponseSchema,
+  GetPodLogsRequestSchema,
+  GetPodLogsResponseSchema,
 } from "@repo/zod-types";
 import { z } from "zod";
 
@@ -16,6 +18,9 @@ export const createLogsRouter = (
       input: z.infer<typeof GetLogsRequestSchema>,
     ) => Promise<z.infer<typeof GetLogsResponseSchema>>;
     clearLogs: () => Promise<z.infer<typeof ClearLogsResponseSchema>>;
+    getPodLogs: (
+      input: z.infer<typeof GetPodLogsRequestSchema>,
+    ) => Promise<z.infer<typeof GetPodLogsResponseSchema>>;
   },
 ) =>
   router({
@@ -32,5 +37,13 @@ export const createLogsRouter = (
       .output(ClearLogsResponseSchema)
       .mutation(async () => {
         return await implementations.clearLogs();
+      }),
+
+    // Protected: Get K8s Pod logs for STDIO servers
+    getPodLogs: protectedProcedure
+      .input(GetPodLogsRequestSchema)
+      .output(GetPodLogsResponseSchema)
+      .query(async ({ input }) => {
+        return await implementations.getPodLogs(input);
       }),
   });
