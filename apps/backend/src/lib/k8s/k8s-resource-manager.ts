@@ -31,7 +31,7 @@ const LABEL_COMMAND_HASH = 'metamcp.io/command-hash';
 const LABEL_MANAGED_BY = 'app.kubernetes.io/managed-by';
 
 function isNotFound(err: any): boolean {
-  return err?.code === 404 || isNotFound(err);
+  return err?.code === 404 || err?.statusCode === 404 || err?.response?.statusCode === 404;
 }
 
 function getPodName(commandHash: string): string {
@@ -251,6 +251,31 @@ export async function waitForReady(commandHash: string, timeoutMs?: number): Pro
 
   logger.warn(`Timed out waiting for Pod with hash ${commandHash} to become ready`);
   return false;
+}
+
+export async function getPodLogs(commandHash: string, options?: {
+  tailLines?: number;
+  sinceSeconds?: number;
+  timestamps?: boolean;
+}): Promise<string | null> {
+  const api = getCoreApi();
+  const ns = getNamespace();
+  const podName = getPodName(commandHash);
+
+  try {
+    const response = await api.readNamespacedPodLog({
+      name: podName,
+      namespace: ns,
+      container: 'supergateway',
+      tailLines: options?.tailLines ?? 200,
+      sinceSeconds: options?.sinceSeconds,
+      timestamps: options?.timestamps ?? true,
+    });
+    return response;
+  } catch (err: any) {
+    if (isNotFound(err)) return null;
+    throw err;
+  }
 }
 
 export async function listManagedResources(): Promise<K8sManagedResource[]> {

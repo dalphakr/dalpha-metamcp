@@ -5,6 +5,7 @@ export {
   ensurePodAndService,
   deletePodAndService,
   getPodStatus,
+  getPodLogs,
   waitForReady,
   listManagedResources,
 } from './k8s-resource-manager';

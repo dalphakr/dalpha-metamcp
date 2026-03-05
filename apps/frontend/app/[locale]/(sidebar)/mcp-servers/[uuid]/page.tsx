@@ -20,6 +20,7 @@ import { use, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { EditMcpServer } from "@/components/edit-mcp-server";
+import { PodLogsSection } from "@/components/pod-logs-section";
 import { ServerDetailsSkeleton } from "@/components/skeletons/server-details-skeleton";
 import { ToolManagementSkeleton } from "@/components/skeletons/tool-management-skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -685,6 +686,11 @@ export default function McpServerDetailPage({
           </div>
         ) : (
           <ServerDetailsSkeleton />
+        )}
+
+        {/* Pod Logs - STDIO servers only */}
+        {server && server.type === McpServerTypeEnum.Enum.STDIO && (
+          <PodLogsSection serverUuid={server.uuid} />
         )}
 
         {/* Tools Management */}
