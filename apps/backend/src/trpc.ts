@@ -5,6 +5,8 @@ import type { Request, Response } from "express";
 import { auth, type Session, type User } from "./auth";
 import logger from "./utils/logger";
 
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
+
 // Extend the base context with Express request/response and auth data
 export interface Context extends BaseContext {
   req: Request;
@@ -25,8 +27,36 @@ export const createContext = async ({
   let session: Session | undefined;
 
   try {
-    // Check if we have cookies in the request
-    if (req.headers.cookie) {
+    // Check for Admin API Key authentication
+    const apiKey = req.headers["x-api-key"] as string | undefined;
+    if (ADMIN_API_KEY && apiKey && apiKey === ADMIN_API_KEY) {
+      const now = new Date();
+      const adminUser = {
+        id: "admin-api-key",
+        name: "Admin API",
+        email: "admin@metamcp.local",
+        emailVerified: true,
+        role: "admin",
+        image: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      user = adminUser as User;
+      session = {
+        session: {
+          id: "admin-api-key-session",
+          token: "admin-api-key-token",
+          userId: "admin-api-key",
+          expiresAt: new Date(Date.now() + 86400000),
+          createdAt: now,
+          updatedAt: now,
+        },
+        user: adminUser,
+      } as unknown as Session;
+    }
+
+    // Fall back to cookie-based session authentication
+    if (!user && req.headers.cookie) {
       // Create a proper Request object for better-auth
       const sessionUrl = new URL(
         "/api/auth/get-session",
