@@ -61,7 +61,7 @@ export default function McpServersPage() {
       url: "",
       bearerToken: "",
       headers: "",
-      user_id: undefined, // Default to private (current user)
+      user_id: null, // Default to public
       k8s_resource_preset: "MEDIUM",
       k8s_cpu_request: "",
       k8s_cpu_limit: "",

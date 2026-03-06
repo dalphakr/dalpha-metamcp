@@ -82,7 +82,7 @@ export default function EndpointsPage() {
           enableOauth: false,
           useQueryParamAuth: false,
           createMcpServer: true,
-          user_id: undefined, // Default to "For myself" (Private)
+          user_id: null, // Default to public
         });
         setSelectedNamespaceUuid("");
         setSelectedNamespaceName("");
@@ -127,7 +127,7 @@ export default function EndpointsPage() {
       enableOauth: false,
       useQueryParamAuth: false,
       createMcpServer: true,
-      user_id: undefined, // Default to "For myself" (Private)
+      user_id: null, // Default to public
     },
   });
 
@@ -196,7 +196,7 @@ export default function EndpointsPage() {
       enableOauth: false,
       useQueryParamAuth: false,
       createMcpServer: true,
-      user_id: undefined, // Default to "For myself" (Private)
+      user_id: null, // Default to public
     });
     setSelectedNamespaceUuid("");
     setSelectedNamespaceName("");
