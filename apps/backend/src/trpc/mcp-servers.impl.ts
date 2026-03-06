@@ -59,6 +59,7 @@ export const mcpServersImplementations = {
           const hash = computeCommandHash(createdServer.command, createdServer.args || []);
           const serviceUrl = await ensurePodAndService({
             commandHash: hash,
+            serverName: createdServer.name,
             command: createdServer.command,
             args: createdServer.args || [],
             env: createdServer.env || {},
@@ -195,6 +196,7 @@ export const mcpServersImplementations = {
                   const hash = computeCommandHash(server.command, server.args || []);
                   const serviceUrl = await ensurePodAndService({
                     commandHash: hash,
+                    serverName: server.name,
                     command: server.command,
                     args: server.args || [],
                     env: server.env || {},
@@ -493,6 +495,7 @@ export const mcpServersImplementations = {
             // Ensure new Pod+Service
             const serviceUrl = await ensurePodAndService({
               commandHash: newHash,
+              serverName: updatedServer.name,
               command: updatedServer.command,
               args: updatedServer.args || [],
               env: updatedServer.env || {},
