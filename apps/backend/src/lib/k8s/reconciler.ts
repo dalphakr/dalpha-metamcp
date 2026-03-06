@@ -1,3 +1,4 @@
+import { resolveK8sResources } from '@repo/zod-types';
 import logger from '@/utils/logger';
 import { K8S_CONFIG } from './k8s-config';
 import { computeCommandHash } from './command-hash';
@@ -37,16 +38,21 @@ export async function runReconciliation(): Promise<void> {
     );
 
     // Group by command hash
-    const dbHashMap = new Map<string, { servers: any[]; serverName: string; command: string; args: string[]; env: Record<string, string> }>();
+    const dbHashMap = new Map<string, { servers: any[]; serverName: string; command: string; args: string[]; env: Record<string, string>; cpuRequest?: string; cpuLimit?: string; memoryRequest?: string; memoryLimit?: string }>();
     for (const server of stdioServers) {
       const hash = computeCommandHash(server.command!, server.args || []);
       if (!dbHashMap.has(hash)) {
+        const resources = resolveK8sResources(server);
         dbHashMap.set(hash, {
           servers: [],
           serverName: server.name,
           command: server.command!,
           args: server.args || [],
           env: server.env || {},
+          cpuRequest: resources.cpuRequest,
+          cpuLimit: resources.cpuLimit,
+          memoryRequest: resources.memoryRequest,
+          memoryLimit: resources.memoryLimit,
         });
       }
       dbHashMap.get(hash)!.servers.push(server);
@@ -61,6 +67,10 @@ export async function runReconciliation(): Promise<void> {
           command: info.command,
           args: info.args,
           env: info.env,
+          cpuRequest: info.cpuRequest,
+          cpuLimit: info.cpuLimit,
+          memoryRequest: info.memoryRequest,
+          memoryLimit: info.memoryLimit,
         });
 
         // Update servers missing k8s_command_hash or k8s_service_url

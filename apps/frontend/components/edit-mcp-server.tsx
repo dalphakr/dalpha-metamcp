@@ -3,6 +3,8 @@
 import {
   EditServerFormData,
   EditServerFormSchema,
+  K8S_RESOURCE_PRESETS,
+  K8sResourcePresetEnum,
   McpServer,
   McpServerTypeEnum,
   UpdateMcpServerRequest,
@@ -159,6 +161,11 @@ export function EditMcpServer({
       headers: "",
       env: "",
       user_id: undefined,
+      k8s_resource_preset: "MEDIUM",
+      k8s_cpu_request: "",
+      k8s_cpu_limit: "",
+      k8s_memory_request: "",
+      k8s_memory_limit: "",
     },
   });
 
@@ -203,6 +210,11 @@ export function EditMcpServer({
           .map(([key, value]) => `${key}=${value}`)
           .join("\n"),
         user_id: server.user_id,
+        k8s_resource_preset: (server.k8s_resource_preset as any) || "MEDIUM",
+        k8s_cpu_request: server.k8s_cpu_request || "",
+        k8s_cpu_limit: server.k8s_cpu_limit || "",
+        k8s_memory_request: server.k8s_memory_request || "",
+        k8s_memory_limit: server.k8s_memory_limit || "",
       });
     }
   }, [server, isOpen, editForm]);
@@ -266,6 +278,11 @@ export function EditMcpServer({
         bearerToken: data.bearerToken,
         headers: headersObject,
         user_id: data.user_id,
+        k8s_resource_preset: data.k8s_resource_preset || null,
+        k8s_cpu_request: data.k8s_resource_preset === "CUSTOM" ? (data.k8s_cpu_request || null) : null,
+        k8s_cpu_limit: data.k8s_resource_preset === "CUSTOM" ? (data.k8s_cpu_limit || null) : null,
+        k8s_memory_request: data.k8s_resource_preset === "CUSTOM" ? (data.k8s_memory_request || null) : null,
+        k8s_memory_limit: data.k8s_resource_preset === "CUSTOM" ? (data.k8s_memory_limit || null) : null,
       };
 
       // Use tRPC mutation instead of direct fetch
@@ -456,6 +473,120 @@ export function EditMcpServer({
                 <p className="text-xs text-muted-foreground">
                   One environment variable per line in KEY=VALUE format
                 </p>
+              </div>
+
+              {/* K8s Resource Preset */}
+              <div className="space-y-3">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium">
+                    {t("mcp-servers:resourcePreset")}
+                  </label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between"
+                        type="button"
+                      >
+                        {editForm.watch("k8s_resource_preset") === "SMALL"
+                          ? t("mcp-servers:resourceSmall")
+                          : editForm.watch("k8s_resource_preset") === "MEDIUM"
+                            ? t("mcp-servers:resourceMedium")
+                            : editForm.watch("k8s_resource_preset") === "LARGE"
+                              ? t("mcp-servers:resourceLarge")
+                              : editForm.watch("k8s_resource_preset") === "CUSTOM"
+                                ? t("mcp-servers:resourceCustom")
+                                : t("mcp-servers:resourceMedium")}
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[var(--radix-dropdown-menu-trigger-width)]">
+                      {K8sResourcePresetEnum.options.map((preset) => (
+                        <DropdownMenuItem
+                          key={preset}
+                          onClick={() => editForm.setValue("k8s_resource_preset", preset)}
+                        >
+                          {t(`mcp-servers:resource${preset.charAt(0) + preset.slice(1).toLowerCase()}`)}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <p className="text-xs text-muted-foreground">
+                    {t("mcp-servers:resourcePresetHelp")}
+                  </p>
+                </div>
+
+                {editForm.watch("k8s_resource_preset") === "CUSTOM" ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="edit-cpu-request" className="text-xs font-medium">
+                        {t("mcp-servers:cpuRequest")}
+                      </label>
+                      <Input
+                        id="edit-cpu-request"
+                        {...editForm.register("k8s_cpu_request")}
+                        placeholder="100m"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="edit-cpu-limit" className="text-xs font-medium">
+                        {t("mcp-servers:cpuLimit")}
+                      </label>
+                      <Input
+                        id="edit-cpu-limit"
+                        {...editForm.register("k8s_cpu_limit")}
+                        placeholder="500m"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="edit-memory-request" className="text-xs font-medium">
+                        {t("mcp-servers:memoryRequest")}
+                      </label>
+                      <Input
+                        id="edit-memory-request"
+                        {...editForm.register("k8s_memory_request")}
+                        placeholder="128Mi"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="edit-memory-limit" className="text-xs font-medium">
+                        {t("mcp-servers:memoryLimit")}
+                      </label>
+                      <Input
+                        id="edit-memory-limit"
+                        {...editForm.register("k8s_memory_limit")}
+                        placeholder="512Mi"
+                      />
+                    </div>
+                  </div>
+                ) : editForm.watch("k8s_resource_preset") && editForm.watch("k8s_resource_preset") !== "CUSTOM" ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    {(() => {
+                      const preset = editForm.watch("k8s_resource_preset") as keyof typeof K8S_RESOURCE_PRESETS;
+                      const values = K8S_RESOURCE_PRESETS[preset] || K8S_RESOURCE_PRESETS.MEDIUM;
+                      return (
+                        <>
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground">{t("mcp-servers:cpuRequest")}</p>
+                            <p className="text-sm">{values.cpuRequest}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground">{t("mcp-servers:cpuLimit")}</p>
+                            <p className="text-sm">{values.cpuLimit}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground">{t("mcp-servers:memoryRequest")}</p>
+                            <p className="text-sm">{values.memoryRequest}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground">{t("mcp-servers:memoryLimit")}</p>
+                            <p className="text-sm">{values.memoryLimit}</p>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : null}
               </div>
             </>
           )}

@@ -67,6 +67,11 @@ export const mcpServersTable = pgTable(
     }),
     k8s_command_hash: text("k8s_command_hash"),
     k8s_service_url: text("k8s_service_url"),
+    k8s_resource_preset: text("k8s_resource_preset").default("MEDIUM"),
+    k8s_cpu_request: text("k8s_cpu_request"),
+    k8s_cpu_limit: text("k8s_cpu_limit"),
+    k8s_memory_request: text("k8s_memory_request"),
+    k8s_memory_limit: text("k8s_memory_limit"),
   },
   (table) => [
     index("mcp_servers_type_idx").on(table.type),
