@@ -5,6 +5,34 @@ export const McpServerStatusEnum = z.enum(["ACTIVE", "INACTIVE"]);
 
 export const McpServerErrorStatusEnum = z.enum(["NONE", "ERROR"]);
 
+export const K8sResourcePresetEnum = z.enum(["SMALL", "MEDIUM", "LARGE", "CUSTOM"]);
+export type K8sResourcePreset = z.infer<typeof K8sResourcePresetEnum>;
+
+export const K8S_RESOURCE_PRESETS = {
+  SMALL: { cpuRequest: "50m", cpuLimit: "200m", memoryRequest: "64Mi", memoryLimit: "256Mi" },
+  MEDIUM: { cpuRequest: "100m", cpuLimit: "500m", memoryRequest: "128Mi", memoryLimit: "512Mi" },
+  LARGE: { cpuRequest: "250m", cpuLimit: "1000m", memoryRequest: "256Mi", memoryLimit: "1Gi" },
+} as const;
+
+export function resolveK8sResources(server: {
+  k8s_resource_preset?: string | null;
+  k8s_cpu_request?: string | null;
+  k8s_cpu_limit?: string | null;
+  k8s_memory_request?: string | null;
+  k8s_memory_limit?: string | null;
+}) {
+  const preset = server.k8s_resource_preset as K8sResourcePreset | null | undefined;
+  if (preset && preset !== "CUSTOM" && preset in K8S_RESOURCE_PRESETS) {
+    return K8S_RESOURCE_PRESETS[preset as keyof typeof K8S_RESOURCE_PRESETS];
+  }
+  return {
+    cpuRequest: server.k8s_cpu_request || undefined,
+    cpuLimit: server.k8s_cpu_limit || undefined,
+    memoryRequest: server.k8s_memory_request || undefined,
+    memoryLimit: server.k8s_memory_limit || undefined,
+  };
+}
+
 // Define the form schema (includes UI-specific fields)
 export const createServerFormSchema = z
   .object({
@@ -25,6 +53,11 @@ export const createServerFormSchema = z
     headers: z.string().optional(),
     env: z.string().optional(),
     user_id: z.string().nullable().optional(),
+    k8s_resource_preset: K8sResourcePresetEnum.optional(),
+    k8s_cpu_request: z.string().optional(),
+    k8s_cpu_limit: z.string().optional(),
+    k8s_memory_request: z.string().optional(),
+    k8s_memory_limit: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -87,6 +120,11 @@ export const EditServerFormSchema = z
     headers: z.string().optional(),
     env: z.string().optional(),
     user_id: z.string().nullable().optional(),
+    k8s_resource_preset: K8sResourcePresetEnum.optional(),
+    k8s_cpu_request: z.string().optional(),
+    k8s_cpu_limit: z.string().optional(),
+    k8s_memory_request: z.string().optional(),
+    k8s_memory_limit: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -151,6 +189,11 @@ export const CreateMcpServerRequestSchema = z
     bearerToken: z.string().optional(),
     headers: z.record(z.string()).optional(),
     user_id: z.string().nullable().optional(),
+    k8s_resource_preset: K8sResourcePresetEnum.nullable().optional(),
+    k8s_cpu_request: z.string().nullable().optional(),
+    k8s_cpu_limit: z.string().nullable().optional(),
+    k8s_memory_request: z.string().nullable().optional(),
+    k8s_memory_limit: z.string().nullable().optional(),
   })
   .refine(
     (data) => {
@@ -191,6 +234,11 @@ export const McpServerSchema = z.object({
   headers: z.record(z.string()),
   user_id: z.string().nullable(),
   error_status: McpServerErrorStatusEnum.optional(),
+  k8s_resource_preset: K8sResourcePresetEnum.nullable().optional(),
+  k8s_cpu_request: z.string().nullable().optional(),
+  k8s_cpu_limit: z.string().nullable().optional(),
+  k8s_memory_request: z.string().nullable().optional(),
+  k8s_memory_limit: z.string().nullable().optional(),
 });
 
 export const CreateMcpServerResponseSchema = z.object({
@@ -333,6 +381,11 @@ export const UpdateMcpServerRequestSchema = z
     bearerToken: z.string().optional(),
     headers: z.record(z.string()).optional(),
     user_id: z.string().nullable().optional(),
+    k8s_resource_preset: K8sResourcePresetEnum.nullable().optional(),
+    k8s_cpu_request: z.string().nullable().optional(),
+    k8s_cpu_limit: z.string().nullable().optional(),
+    k8s_memory_request: z.string().nullable().optional(),
+    k8s_memory_limit: z.string().nullable().optional(),
   })
   .refine(
     (data) => {
@@ -405,6 +458,11 @@ export const McpServerCreateInputSchema = z.object({
   user_id: z.string().nullable().optional(),
   k8s_command_hash: z.string().nullable().optional(),
   k8s_service_url: z.string().nullable().optional(),
+  k8s_resource_preset: z.string().nullable().optional(),
+  k8s_cpu_request: z.string().nullable().optional(),
+  k8s_cpu_limit: z.string().nullable().optional(),
+  k8s_memory_request: z.string().nullable().optional(),
+  k8s_memory_limit: z.string().nullable().optional(),
 });
 
 export const McpServerUpdateInputSchema = z.object({
@@ -431,6 +489,11 @@ export const McpServerUpdateInputSchema = z.object({
   user_id: z.string().nullable().optional(),
   k8s_command_hash: z.string().nullable().optional(),
   k8s_service_url: z.string().nullable().optional(),
+  k8s_resource_preset: z.string().nullable().optional(),
+  k8s_cpu_request: z.string().nullable().optional(),
+  k8s_cpu_limit: z.string().nullable().optional(),
+  k8s_memory_request: z.string().nullable().optional(),
+  k8s_memory_limit: z.string().nullable().optional(),
 });
 
 export type McpServerCreateInput = z.infer<typeof McpServerCreateInputSchema>;
@@ -453,6 +516,11 @@ export const DatabaseMcpServerSchema = z.object({
   user_id: z.string().nullable(),
   k8s_command_hash: z.string().nullable().optional(),
   k8s_service_url: z.string().nullable().optional(),
+  k8s_resource_preset: z.string().nullable().optional(),
+  k8s_cpu_request: z.string().nullable().optional(),
+  k8s_cpu_limit: z.string().nullable().optional(),
+  k8s_memory_request: z.string().nullable().optional(),
+  k8s_memory_limit: z.string().nullable().optional(),
 });
 
 export type DatabaseMcpServer = z.infer<typeof DatabaseMcpServerSchema>;

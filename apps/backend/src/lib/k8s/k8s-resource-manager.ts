@@ -9,6 +9,10 @@ export interface StdioPodConfig {
   command: string;
   args: string[];
   env?: Record<string, string>;
+  cpuRequest?: string;
+  cpuLimit?: string;
+  memoryRequest?: string;
+  memoryLimit?: string;
 }
 
 export interface PodStatus {
@@ -133,12 +137,12 @@ function buildDeploymentSpec(config: StdioPodConfig): k8s.V1Deployment {
               env: envVars,
               resources: {
                 requests: {
-                  cpu: K8S_CONFIG.podCpuRequest,
-                  memory: K8S_CONFIG.podMemoryRequest,
+                  cpu: config.cpuRequest || K8S_CONFIG.podCpuRequest,
+                  memory: config.memoryRequest || K8S_CONFIG.podMemoryRequest,
                 },
                 limits: {
-                  cpu: K8S_CONFIG.podCpuLimit,
-                  memory: K8S_CONFIG.podMemoryLimit,
+                  cpu: config.cpuLimit || K8S_CONFIG.podCpuLimit,
+                  memory: config.memoryLimit || K8S_CONFIG.podMemoryLimit,
                 },
               },
               readinessProbe: {
@@ -192,8 +196,33 @@ export async function ensurePodAndService(config: StdioPodConfig): Promise<strin
 
   // Ensure Deployment (idempotent)
   try {
-    await apps.readNamespacedDeployment({ name: deployName, namespace: ns });
+    const existing = await apps.readNamespacedDeployment({ name: deployName, namespace: ns });
     logger.info(`Deployment ${deployName} already exists`);
+
+    // Patch resources if they differ
+    const currentResources = existing.spec?.template?.spec?.containers?.[0]?.resources;
+    const desiredResources = {
+      requests: {
+        cpu: config.cpuRequest || K8S_CONFIG.podCpuRequest,
+        memory: config.memoryRequest || K8S_CONFIG.podMemoryRequest,
+      },
+      limits: {
+        cpu: config.cpuLimit || K8S_CONFIG.podCpuLimit,
+        memory: config.memoryLimit || K8S_CONFIG.podMemoryLimit,
+      },
+    };
+
+    const needsPatch =
+      currentResources?.requests?.cpu !== desiredResources.requests.cpu ||
+      currentResources?.requests?.memory !== desiredResources.requests.memory ||
+      currentResources?.limits?.cpu !== desiredResources.limits.cpu ||
+      currentResources?.limits?.memory !== desiredResources.limits.memory;
+
+    if (needsPatch && existing.spec?.template?.spec?.containers?.[0]) {
+      logger.info(`Patching Deployment ${deployName} with updated resources`);
+      existing.spec.template.spec.containers[0].resources = desiredResources;
+      await apps.replaceNamespacedDeployment({ name: deployName, namespace: ns, body: existing });
+    }
   } catch (err: any) {
     if (isNotFound(err)) {
       logger.info(`Creating Deployment ${deployName}`);

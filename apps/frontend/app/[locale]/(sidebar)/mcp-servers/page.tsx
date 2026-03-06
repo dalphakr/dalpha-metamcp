@@ -4,6 +4,8 @@ import {
   CreateMcpServerRequest,
   CreateServerFormData,
   createServerFormSchema,
+  K8S_RESOURCE_PRESETS,
+  K8sResourcePresetEnum,
   McpServerTypeEnum,
 } from "@repo/zod-types";
 import { ChevronDown, Plus, Server } from "lucide-react";
@@ -60,6 +62,11 @@ export default function McpServersPage() {
       bearerToken: "",
       headers: "",
       user_id: undefined, // Default to private (current user)
+      k8s_resource_preset: "MEDIUM",
+      k8s_cpu_request: "",
+      k8s_cpu_limit: "",
+      k8s_memory_request: "",
+      k8s_memory_limit: "",
     },
   });
 
@@ -136,6 +143,11 @@ export default function McpServersPage() {
       bearerToken: data.bearerToken,
       headers: headersObject,
       user_id: data.user_id,
+      k8s_resource_preset: data.k8s_resource_preset || null,
+      k8s_cpu_request: data.k8s_resource_preset === "CUSTOM" ? (data.k8s_cpu_request || null) : null,
+      k8s_cpu_limit: data.k8s_resource_preset === "CUSTOM" ? (data.k8s_cpu_limit || null) : null,
+      k8s_memory_request: data.k8s_resource_preset === "CUSTOM" ? (data.k8s_memory_request || null) : null,
+      k8s_memory_limit: data.k8s_resource_preset === "CUSTOM" ? (data.k8s_memory_limit || null) : null,
     };
 
     createMutation.mutate(request);
@@ -371,6 +383,136 @@ export default function McpServersPage() {
                           </FormItem>
                         )}
                       />
+
+                      {/* K8s Resource Preset */}
+                      <div className="space-y-3">
+                        <FormField
+                          control={form.control}
+                          name="k8s_resource_preset"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t("mcp-servers:resourcePreset")}</FormLabel>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    className="w-full justify-between"
+                                    type="button"
+                                  >
+                                    {field.value === "SMALL"
+                                      ? t("mcp-servers:resourceSmall")
+                                      : field.value === "MEDIUM"
+                                        ? t("mcp-servers:resourceMedium")
+                                        : field.value === "LARGE"
+                                          ? t("mcp-servers:resourceLarge")
+                                          : field.value === "CUSTOM"
+                                            ? t("mcp-servers:resourceCustom")
+                                            : t("mcp-servers:resourceMedium")}
+                                    <ChevronDown className="ml-2 h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[var(--radix-dropdown-menu-trigger-width)]"
+                                  align="start"
+                                >
+                                  {K8sResourcePresetEnum.options.map((preset) => (
+                                    <DropdownMenuItem
+                                      key={preset}
+                                      onClick={() => field.onChange(preset)}
+                                    >
+                                      {t(`mcp-servers:resource${preset.charAt(0) + preset.slice(1).toLowerCase()}`)}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {t("mcp-servers:resourcePresetHelp")}
+                              </p>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {form.watch("k8s_resource_preset") === "CUSTOM" ? (
+                          <div className="grid grid-cols-2 gap-3">
+                            <FormField
+                              control={form.control}
+                              name="k8s_cpu_request"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs">{t("mcp-servers:cpuRequest")}</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="100m" />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="k8s_cpu_limit"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs">{t("mcp-servers:cpuLimit")}</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="500m" />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="k8s_memory_request"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs">{t("mcp-servers:memoryRequest")}</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="128Mi" />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="k8s_memory_limit"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs">{t("mcp-servers:memoryLimit")}</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="512Mi" />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        ) : form.watch("k8s_resource_preset") && form.watch("k8s_resource_preset") !== "CUSTOM" ? (
+                          <div className="grid grid-cols-2 gap-3">
+                            {(() => {
+                              const preset = form.watch("k8s_resource_preset") as keyof typeof K8S_RESOURCE_PRESETS;
+                              const values = K8S_RESOURCE_PRESETS[preset] || K8S_RESOURCE_PRESETS.MEDIUM;
+                              return (
+                                <>
+                                  <div>
+                                    <p className="text-xs font-medium text-muted-foreground">{t("mcp-servers:cpuRequest")}</p>
+                                    <p className="text-sm">{values.cpuRequest}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-medium text-muted-foreground">{t("mcp-servers:cpuLimit")}</p>
+                                    <p className="text-sm">{values.cpuLimit}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-medium text-muted-foreground">{t("mcp-servers:memoryRequest")}</p>
+                                    <p className="text-sm">{values.memoryRequest}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-medium text-muted-foreground">{t("mcp-servers:memoryLimit")}</p>
+                                    <p className="text-sm">{values.memoryLimit}</p>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        ) : null}
+                      </div>
                     </>
                   )}
 

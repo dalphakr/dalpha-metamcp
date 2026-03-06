@@ -9,6 +9,7 @@ import {
   McpServerTypeEnum,
   UpdateMcpServerRequestSchema,
   UpdateMcpServerResponseSchema,
+  resolveK8sResources,
 } from "@repo/zod-types";
 import { z } from "zod";
 
@@ -57,12 +58,17 @@ export const mcpServersImplementations = {
       if (createdServer.type === McpServerTypeEnum.Enum.STDIO && createdServer.command) {
         try {
           const hash = computeCommandHash(createdServer.command, createdServer.args || []);
+          const resources = resolveK8sResources(createdServer);
           const serviceUrl = await ensurePodAndService({
             commandHash: hash,
             serverName: createdServer.name,
             command: createdServer.command,
             args: createdServer.args || [],
             env: createdServer.env || {},
+            cpuRequest: resources.cpuRequest,
+            cpuLimit: resources.cpuLimit,
+            memoryRequest: resources.memoryRequest,
+            memoryLimit: resources.memoryLimit,
           });
           await waitForReady(hash);
           const updated = await mcpServersRepository.update({
@@ -200,6 +206,7 @@ export const mcpServersImplementations = {
                     command: server.command,
                     args: server.args || [],
                     env: server.env || {},
+                    ...resolveK8sResources(server),
                   });
                   await waitForReady(hash);
                   await mcpServersRepository.update({
@@ -493,12 +500,17 @@ export const mcpServersImplementations = {
             }
 
             // Ensure new Pod+Service
+            const resources = resolveK8sResources(updatedServer);
             const serviceUrl = await ensurePodAndService({
               commandHash: newHash,
               serverName: updatedServer.name,
               command: updatedServer.command,
               args: updatedServer.args || [],
               env: updatedServer.env || {},
+              cpuRequest: resources.cpuRequest,
+              cpuLimit: resources.cpuLimit,
+              memoryRequest: resources.memoryRequest,
+              memoryLimit: resources.memoryLimit,
             });
             await waitForReady(newHash);
 
