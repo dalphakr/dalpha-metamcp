@@ -37,12 +37,13 @@ export async function runReconciliation(): Promise<void> {
     );
 
     // Group by command hash
-    const dbHashMap = new Map<string, { servers: any[]; command: string; args: string[]; env: Record<string, string> }>();
+    const dbHashMap = new Map<string, { servers: any[]; serverName: string; command: string; args: string[]; env: Record<string, string> }>();
     for (const server of stdioServers) {
       const hash = computeCommandHash(server.command!, server.args || []);
       if (!dbHashMap.has(hash)) {
         dbHashMap.set(hash, {
           servers: [],
+          serverName: server.name,
           command: server.command!,
           args: server.args || [],
           env: server.env || {},
@@ -56,6 +57,7 @@ export async function runReconciliation(): Promise<void> {
       try {
         const serviceUrl = await ensurePodAndService({
           commandHash: hash,
+          serverName: info.serverName,
           command: info.command,
           args: info.args,
           env: info.env,

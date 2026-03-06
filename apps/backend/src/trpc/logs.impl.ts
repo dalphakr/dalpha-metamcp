@@ -72,7 +72,7 @@ export const logsImplementations = {
       success: true as const,
       data: {
         logs: logs ?? "",
-        podName: `metamcp-mcp-${server.k8s_command_hash}`,
+        podName: status?.podName ?? `metamcp-mcp-${server.k8s_command_hash}`,
         podPhase: status?.phase ?? "Unknown",
         ready: status?.ready ?? false,
       },

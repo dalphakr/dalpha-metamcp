@@ -4,12 +4,14 @@ import { K8S_CONFIG } from './k8s-config';
 import logger from '@/utils/logger';
 
 let coreApi: k8s.CoreV1Api;
+let appsApi: k8s.AppsV1Api;
 let namespace: string;
 
 export function initializeK8sClient(): void {
   const kc = new k8s.KubeConfig();
   kc.loadFromCluster();
   coreApi = kc.makeApiClient(k8s.CoreV1Api);
+  appsApi = kc.makeApiClient(k8s.AppsV1Api);
 
   // Determine namespace
   if (K8S_CONFIG.namespace) {
@@ -30,6 +32,13 @@ export function getCoreApi(): k8s.CoreV1Api {
     throw new Error('K8s client not initialized. Call initializeK8sClient() first.');
   }
   return coreApi;
+}
+
+export function getAppsApi(): k8s.AppsV1Api {
+  if (!appsApi) {
+    throw new Error('K8s client not initialized. Call initializeK8sClient() first.');
+  }
+  return appsApi;
 }
 
 export function getNamespace(): string {
